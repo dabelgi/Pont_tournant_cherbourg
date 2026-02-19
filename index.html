@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="description" content="Horaires du pont tournant de Cherbourg en temps réel">
+    
+    <title>Pont Tournant Cherbourg</title>
+    
+    <!-- PWA Meta tags -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(160deg, #0a0a0f 0%, #050508 100%);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Container principal */
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        /* Header avec logo */
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 16px;
+            background: rgba(52, 211, 153, 0.1);
+            border: 1px solid rgba(52, 211, 153, 0.3);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .header p {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Carte de statut principale */
+        .status-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .status-card.open {
+            background: rgba(52, 211, 153, 0.08);
+            border-color: rgba(52, 211, 153, 0.25);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            margin-bottom: 12px;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .status-card.open .status-dot {
+            background: #34d399;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.85); }
+        }
+
+        .status-card.open .status-badge {
+            color: #34d399;
+        }
+
+        .main-time {
+            font-size: 40px;
+            font-weight: 900;
+            margin-bottom: 6px;
+        }
+
+        .main-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Cartes des fenêtres d'ouverture */
+        .windows-section {
+            margin-bottom: 20px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 2px;
+        }
+
+        .window-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 10px;
+        }
+
+        .window-card.active {
+            background: rgba(52, 211, 153, 0.06);
+            border-color: rgba(52, 211, 153, 0.25);
+        }
+
+        .window-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .window-time {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .window-card.active .window-time {
+            color: #34d399;
+        }
+
+        .window-height {
+            font-size: 22px;
+            font-weight: 900;
+            color: rgba(255, 255, 255, 0.4);
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+        }
+
+        .window-card.active .window-height {
+            color: #34d399;
+            background: rgba(52, 211, 153, 0.12);
+        }
+
+        .progress-bar {
+            height: 5px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 3px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #34d399, #6ee7b7);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        /* Bouton installer */
+        .install-button {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #34d399, #059669);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            padding: 16px 32px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(52, 211, 153, 0.3);
+            display: none;
+            z-index: 1000;
+        }
+
+        .install-button.show {
+            display: block;
+            animation: slideUp 0.4s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.2);
+        }
+
+        .footer a {
+            color: #34d399;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">🌊</div>
+            <h1>Pont Tournant</h1>
+            <p>Cherbourg-en-Cotentin</p>
+        </div>
+
+        <!-- Statut actuel -->
+        <div class="status-card" id="statusCard">
+            <div class="status-badge">
+                <span class="status-dot"></span>
+                <span id="statusText">PONT FERMÉ</span>
+            </div>
+            <div class="main-time" id="mainTime">—</div>
+            <div class="main-label" id="mainLabel">Chargement...</div>
+        </div>
+
+        <!-- Fenêtres d'ouverture -->
+        <div class="windows-section">
+            <div class="section-header">
+                <div class="section-title">AUJOURD'HUI</div>
+                <div class="section-title" id="windowCount">—</div>
+            </div>
+            <div id="windowsList"></div>
+        </div>
+
+        <!-- Info -->
+        <div class="window-card">
+            <p style="font-size: 12px; color: rgba(255, 255, 255, 0.35); line-height: 1.6;">
+                🌊 Le pont peut s'ouvrir ±1h autour de chaque pleine mer<br>
+                ⛵ Uniquement si un bateau se présente<br>
+                🚦 Circulation interrompue à chaque manœuvre
+            </p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        Données SHOM · <a href="https://monportfolio.fr" target="_blank">Créé par [Ton Nom]</a>
+    </div>
+
+    <!-- Bouton installer -->
+    <button class="install-button" id="installBtn">
+        📲 Installer l'application
+    </button>
+
+    <script>
+        // ===== DONNÉES DES MARÉES =====
+        const TIDES_DATA = [
+            { time: "02:14", type: "high", height: 5.8 },
+            { time: "14:47", type: "high", height: 6.1 }
+        ];
+
+        // ===== CALCUL DES FENÊTRES D'OUVERTURE =====
+        function getBridgeWindows() {
+            const windows = [];
+            const today = new Date();
+            
+            TIDES_DATA.filter(t => t.type === 'high').forEach(tide => {
+                const [h, m] = tide.time.split(':').map(Number);
+                const peakTime = new Date(today);
+                peakTime.setHours(h, m, 0, 0);
+                
+                const openTime = new Date(peakTime.getTime() - 60 * 60 * 1000); // -1h
+                const closeTime = new Date(peakTime.getTime() + 60 * 60 * 1000); // +1h
+                
+                windows.push({
+                    open: openTime,
+                    peak: peakTime,
+                    close: closeTime,
+                    height: tide.height
+                });
+            });
+            
+            return windows;
+        }
+
+        function formatTime(date) {
+            return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function isWindowActive(window) {
+            const now = new Date();
+            return now >= window.open && now <= window.close;
+        }
+
+        function getProgress(window) {
+            const now = new Date();
+            if (!isWindowActive(window)) return 0;
+            const total = window.close - window.open;
+            const elapsed = now - window.open;
+            return Math.min(Math.max(elapsed / total, 0), 1) * 100;
+        }
+
+        function minutesUntil(date) {
+            const now = new Date();
+            const diff = date - now;
+            return Math.max(0, Math.floor(diff / 60000));
+        }
+
+        // ===== MISE À JOUR DE L'UI =====
+        function updateUI() {
+            const windows = getBridgeWindows();
+            const activeWindow = windows.find(isWindowActive);
+            const nextWindow = windows.find(w => w.open > new Date());
+            
+            const statusCard = document.getElementById('statusCard');
+            const statusText = document.getElementById('statusText');
+            const mainTime = document.getElementById('mainTime');
+            const mainLabel = document.getElementById('mainLabel');
+            
+            // Mise à jour statut principal
+            if (activeWindow) {
+                statusCard.classList.add('open');
+                statusText.textContent = 'OUVERTURE POSSIBLE';
+                mainTime.textContent = formatTime(activeWindow.peak);
+                mainLabel.textContent = 'Heure de pleine mer';
+            } else if (nextWindow) {
+                statusCard.classList.remove('open');
+                statusText.textContent = 'PONT FERMÉ';
+                const mins = minutesUntil(nextWindow.open);
+                mainTime.textContent = `${Math.floor(mins / 60)}h ${mins % 60}min`;
+                mainLabel.textContent = 'Avant la prochaine fenêtre';
+            }
+            
+            // Mise à jour liste des fenêtres
+            document.getElementById('windowCount').textContent = `${windows.length} fenêtres`;
+            
+            const windowsList = document.getElementById('windowsList');
+            windowsList.innerHTML = windows.map(w => {
+                const isActive = isWindowActive(w);
+                const progress = getProgress(w);
+                
+                return `
+                    <div class="window-card ${isActive ? 'active' : ''}">
+                        <div class="window-header">
+                            <div>
+                                <div class="window-time">
+                                    ${formatTime(w.open)} — ${formatTime(w.close)}
+                                </div>
+                                <div style="font-size: 11px; color: rgba(255, 255, 255, 0.35); margin-top: 4px;">
+                                    Pleine mer à ${formatTime(w.peak)}
+                                </div>
+                            </div>
+                            <div class="window-height">${w.height.toFixed(1)}m</div>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${progress}%"></div>
+                        </div>
+                        ${isActive ? '<div style="margin-top: 12px; font-size: 10px; color: #34d399; font-weight: 600;">● EN COURS</div>' : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ===== PWA INSTALLATION =====
+        let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.classList.add('show');
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            
+            if (outcome === 'accepted') {
+                installBtn.classList.remove('show');
+            }
+            
+            deferredPrompt = null;
+        });
+
+        // ===== INITIALISATION =====
+        updateUI();
+        setInterval(updateUI, 30000); // Mise à jour toutes les 30 secondes
+
+        // Service Worker pour le mode offline
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+</html>
